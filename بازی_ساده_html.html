@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+<meta charset="UTF-8">
+<title>Mahbod Game – Ultimate Shooter</title>
+<style>
+body{margin:0;background:#020617;color:#e5e7eb;font-family:sans-serif;display:flex;flex-direction:column;align-items:center}
+canvas{background:#000;border:3px solid #38bdf8;margin-top:10px;touch-action:none}
+#menu,#hud,#shop{margin-top:8px;font-size:14px}
+button{margin:4px;padding:6px 12px;background:#38bdf8;border:none;border-radius:6px;color:#000;font-weight:bold}
+button:hover{opacity:.85}
+</style>
+</head>
+<body>
+
+<h2>🎮 Mahbod Game – Ultimate Shooter</h2>
+
+<div id="menu">
+<button onclick="startGame()">Start Game</button>
+</div>
+
+<div id="hud" style="display:none">
+Score:<span id="score">0</span> | HP:<span id="hp">3</span> | Level:<span id="level">1</span>
+</div>
+
+<div id="shop" style="display:none">
+<button onclick="upgrade('dmg')">Damage+</button>
+<button onclick="upgrade('speed')">Speed+</button>
+<button onclick="upgrade('bomb')">Bomb+</button>
+</div>
+
+<canvas id="game" width="400" height="600" style="display:none"></canvas>
+
+<script>
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+let running=false;
+
+let score,level,hp,damage,bombsCount;
+let bullets,enemies,bombs,boss;
+const player={x:200,y:520,r:14,speed:5};
+
+function resetGame(){
+  score=0;level=1;hp=3;damage=1;bombsCount=3;
+  bullets=[];enemies=[];bombs=[];boss=null;
+}
+
+function startGame(){
+  resetGame();
+  document.getElementById('menu').style.display='none';
+  document.getElementById('hud').style.display='block';
+  document.getElementById('shop').style.display='block';
+  canvas.style.display='block';
+  running=true;
+  loop();
+}
+
+function upgrade(t){if(score<5)return;score-=5;if(t==='dmg')damage++;if(t==='speed')player.speed++;if(t==='bomb')bombsCount++;}
+
+function shoot(){if(!running)return;bullets.push({x:player.x,y:player.y,r:4,s:8,d:damage});}
+function throwBomb(){if(bombsCount>0){bombsCount--;bombs.push({x:player.x,y:player.y});}}
+
+function spawnEnemy(){if(!running)return;enemies.push({x:Math.random()*360,y:-20,s:2+level*.4,hp:2+level});}
+function spawnBoss(){boss={x:100,y:40,w:200,h:40,hp:80+level*30};}
+
+function drawPlayer(){ctx.fillStyle='#22c55e';ctx.beginPath();ctx.arc(player.x,player.y,player.r,0,Math.PI*2);ctx.fill();}
+
+function loop(){
+  if(!running)return;
+  ctx.clearRect(0,0,400,600);
+
+  bullets.forEach(b=>b.y-=b.s);
+  enemies.forEach(e=>e.y+=e.s);
+
+  enemies.forEach((e,ei)=>{
+    bullets.forEach((b,bi)=>{
+      if(b.x>e.x&&b.x<e.x+20&&b.y>e.y&&b.y<e.y+20){
+        e.hp-=b.d;bullets.splice(bi,1);
+        if(e.hp<=0){enemies.splice(ei,1);score++;}
+      }
+    });
+  });
+
+  if(score>0&&score%10===0&&!boss)spawnBoss();
+
+  drawPlayer();
+  ctx.fillStyle='#ef4444';enemies.forEach(e=>ctx.fillRect(e.x,e.y,20,20));
+  ctx.fillStyle='#eab308';bullets.forEach(b=>{ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fill();});
+
+  document.getElementById('score').innerText=score;
+  document.getElementById('hp').innerText=hp;
+  document.getElementById('level').innerText=level;
+
+  requestAnimationFrame(loop);
+}
+
+window.addEventListener('keydown',e=>{
+  if(e.key==='ArrowLeft')player.x-=player.speed;
+  if(e.key==='ArrowRight')player.x+=player.speed;
+  if(e.key===' ')shoot();
+  if(e.key==='b')throwBomb();
+});
+
+setInterval(spawnEnemy,900);
+</script>
+</body>
+</html>
